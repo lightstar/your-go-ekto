@@ -1,0 +1,52 @@
+services:
+  your-go-ekto:
+    image: your-go-ekto:1.0
+    container_name: your-go-ekto
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile
+    command: ["-storage=/storage", "-address=:8080", "-log=debug"]
+    expose:
+      - "8080"
+    volumes:
+      - ekto-storage:/storage
+    networks:
+      - ekto-net
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
+
+  your-go-ekto-nginx:
+    image: nginx:1.31-alpine
+    container_name: your-go-ekto-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ../web:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - ekto-net
+    depends_on:
+      your-go-ekto:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      start_interval: 1s
+
+volumes:
+  ekto-storage:
+
+networks:
+  ekto-net:
+    driver: bridge

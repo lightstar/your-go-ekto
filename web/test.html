@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Загрузка досье и улик</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                max-width: 600px;
+                margin: 2rem auto;
+            }
+            input[type="file"] {
+                margin: 1rem 0;
+            }
+            button,
+            input[type="file"]::file-selector-button {
+                padding: 0.5rem 1rem;
+                background: #007bff;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            button:hover,
+            input[type="file"]::file-selector-button:hover {
+                background: #0056b3;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Загрузите досье и улики</h1>
+
+        <form
+            action="/api/v1/entities"
+            method="post"
+            enctype="multipart/form-data"
+        >
+            Досье в виде JSON:<br />
+            <textarea name="dossier" rows="15" cols="50" required>
+{
+  "name": "Призрак библиотеки",
+  "description": "Раскидывает книги по ночам",
+  "threat_level": 4,
+  "vulnerabilities": ["соль", "громкая музыка"]
+}</textarea>
+            <br />
+            <input
+                type="file"
+                name="evidence"
+                accept="image/jpeg,image/png"
+                multiple
+                required
+            />
+            <br />
+            <button id="submit-button" type="submit">Загрузить</button>
+        </form>
+
+        <div id="result" style="margin-top: 1rem"></div>
+
+        <section id="resources" hidden>
+            <p id="status" hidden>Статус: <strong id="status-text"></strong></p>
+
+            <div id="saved-resources" hidden>
+                <h2>Сохраненные ресурсы</h2>
+                <p><a id="dossier-link" target="_blank"></a></p>
+                <ul id="saved-evidence-list"></ul>
+            </div>
+
+            <div id="failed-resources" hidden>
+                <h2>Не удалось сохранить</h2>
+                <ul id="failed-evidence-list"></ul>
+            </div>
+        </section>
+
+        <script src="test.js"></script>
+    </body>
+</html>
