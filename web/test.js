@@ -30,7 +30,7 @@ form.addEventListener("submit", async (event) => {
       body: new FormData(form),
     });
 
-    const data = (async function () {
+    const data = await (async function () {
       const contentType = (response.headers.get("content-type") ?? "")
         .trim()
         .toLowerCase();
