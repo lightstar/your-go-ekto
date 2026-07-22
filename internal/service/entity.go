@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/lightstar/your-go-ekto/internal/model"
 	"github.com/lightstar/your-go-ekto/internal/storage"
@@ -78,9 +79,13 @@ func (s *Service) CreateEntity(
 			return
 		}
 
+		const rollbackTimeout = 5 * time.Second
+		rollBackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rollbackTimeout)
+		defer cancel()
+
 		orphanedEntityRemained := false
 		if dossierID != uuid.Nil {
-			if removeErr := s.removeOrphanedEntity(dossierID); removeErr != nil {
+			if removeErr := s.removeOrphanedEntity(rollBackCtx, dossierID); removeErr != nil {
 				err = errors.Join(err, removeErr)
 				orphanedEntityRemained = true
 			}
@@ -88,7 +93,8 @@ func (s *Service) CreateEntity(
 
 		// Мы не должны удалять улики, если сущность уже была сохранена, и ее не удалось удалить.
 		if !orphanedEntityRemained {
-			if removeErrs := s.removeOrphanedEvidences(p.savedEvidences); removeErrs != nil {
+			removeErrs := s.removeOrphanedEvidences(rollBackCtx, p.savedEvidences)
+			if removeErrs != nil {
 				err = errors.Join(append([]error{err}, removeErrs...)...)
 			}
 		}
@@ -190,16 +196,9 @@ func (s *Service) paranormalIndex(savedEvidenceSize int64, totalEvidenceCount in
 
 // removeOrphanedEntity удаляет уже сохраненную сущность, если вдруг понадобится откат операции
 // сохранения.
-// Здесь мы игнорируем контекст запроса (используем context.Background()), т.к. откатить нужно
-// в любом случае.
-func (s *Service) removeOrphanedEntity(dossierID uuid.UUID) error {
-	if err := s.storage.RemoveEntity(context.Background(), dossierID); err != nil {
-		errPrefix := "remove orphaned entity"
-
-		if errors.Is(err, storage.ErrStorageOp) {
-			return fmt.Errorf("%s: %w: %w", errPrefix, ErrStorage, err)
-		}
-		return fmt.Errorf("%s: %w", errPrefix, err)
+func (s *Service) removeOrphanedEntity(ctx context.Context, dossierID uuid.UUID) error {
+	if err := s.storage.RemoveEntity(ctx, dossierID); err != nil {
+		return fmt.Errorf("remove orphaned entity: %w: %w", ErrStorage, err)
 	}
 
 	return nil
@@ -207,21 +206,12 @@ func (s *Service) removeOrphanedEntity(dossierID uuid.UUID) error {
 
 // removeOrphanedEvidences удаляет уже сохраненные улики, если вдруг понадобится откат
 // операции сохранения сущности.
-// Здесь мы игнорируем контекст запроса (используем context.Background()), т.к. откатить нужно
-// в любом случае.
-func (s *Service) removeOrphanedEvidences(evidences []string) []error {
+func (s *Service) removeOrphanedEvidences(ctx context.Context, evidences []string) []error {
 	var errs []error
 
 	for _, evidence := range evidences {
-		if err := s.storage.RemoveEvidence(context.Background(), evidence); err != nil {
-			errPrefix := "remove orphaned evidence"
-
-			if errors.Is(err, storage.ErrStorageOp) {
-				err = fmt.Errorf("%s %q: %w: %w", errPrefix, evidence, ErrStorage, err)
-			} else {
-				err = fmt.Errorf("%s %q: %w", errPrefix, evidence, err)
-			}
-
+		if err := s.storage.RemoveEvidence(ctx, evidence); err != nil {
+			err = fmt.Errorf("remove orphaned evidence %q: %w: %w", evidence, ErrStorage, err)
 			errs = append(errs, err)
 		}
 	}
