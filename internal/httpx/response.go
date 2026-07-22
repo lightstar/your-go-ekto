@@ -1,7 +1,9 @@
 package httpx
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -15,7 +17,7 @@ type ErrorResponse struct {
 // ErrMarshalResponse (при ошибке маршалинга в JSON), либо ErrWriteResponse (при ошибки записи
 // ответа).
 func WriteJSONResponse(w http.ResponseWriter, r *http.Request, response any, status int) error {
-	if r.Context().Err() != nil {
+	if errors.Is(r.Context().Err(), context.Canceled) {
 		return nil
 	}
 
