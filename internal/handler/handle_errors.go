@@ -15,11 +15,6 @@ func (h *Handler) handleCreateEntityError(w http.ResponseWriter, r *http.Request
 	var msg string
 	var status int
 
-	if errors.Is(err, context.Canceled) {
-		h.logger.Debug(r, "context canceled", slog.String("error", err.Error()))
-		return
-	}
-
 	// Ошибка хранилища - приоритетная, ее наличие означает ошибку сервера, т.е. мы должны вернуть
 	// 500 Internal Server Error.
 	// Проверить ее нужно сразу, т.к. в теории ошибки запроса также могут присутствовать в цепочке
@@ -27,6 +22,11 @@ func (h *Handler) handleCreateEntityError(w http.ResponseWriter, r *http.Request
 	if errors.Is(err, service.ErrStorage) {
 		h.logger.Error(r, "create entity storage error", slog.String("error", err.Error()))
 		h.error(w, r, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if errors.Is(err, context.Canceled) {
+		h.logger.Debug(r, "context canceled", slog.String("error", err.Error()))
 		return
 	}
 
