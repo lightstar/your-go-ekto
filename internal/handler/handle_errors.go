@@ -16,6 +16,7 @@ func (h *Handler) handleCreateEntityError(w http.ResponseWriter, r *http.Request
 	var status int
 
 	if errors.Is(err, context.Canceled) {
+		h.logger.Debug(r, "context canceled", slog.String("error", err.Error()))
 		return
 	}
 
@@ -50,6 +51,11 @@ func (h *Handler) handleGetEntityError(w http.ResponseWriter, r *http.Request, e
 	var msg string
 	var status int
 
+	if errors.Is(err, context.Canceled) {
+		h.logger.Debug(r, "context canceled", slog.String("error", err.Error()))
+		return
+	}
+
 	if errors.Is(err, service.ErrEntityNotExists) {
 		msg, status = "entity not exists", http.StatusNotFound
 	} else {
@@ -68,6 +74,11 @@ func (h *Handler) handleGetEvidenceError(
 ) {
 	var msg string
 	var status int
+
+	if errors.Is(err, context.Canceled) {
+		h.logger.Debug(r, "context canceled", slog.String("error", err.Error()))
+		return
+	}
 
 	if errors.Is(err, service.ErrInvalidEvidenceName) {
 		msg, status = "invalid evidence name", http.StatusBadRequest

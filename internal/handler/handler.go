@@ -25,8 +25,8 @@ const (
 // Service представляет собой интерфейс для работы с сервисом сущностей и улик.
 type Service interface {
 	CreateEntity(ctx context.Context, r service.EntityReader) (service.CreateEntityResult, error)
-	GetEntity(id uuid.UUID) (model.Entity, error)
-	GetEvidence(fileName string) (time.Time, io.ReadSeekCloser, error)
+	GetEntity(ctx context.Context, id uuid.UUID) (model.Entity, error)
+	GetEvidence(ctx context.Context, fileName string) (time.Time, io.ReadSeekCloser, error)
 }
 
 // Handler обрабатывает HTTP-запросы для работы с сущностями и уликами.
@@ -115,7 +115,7 @@ func (h *Handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entity, err := h.service.GetEntity(id)
+	entity, err := h.service.GetEntity(r.Context(), id)
 	if err != nil {
 		h.handleGetEntityError(w, r, err)
 		return
@@ -130,7 +130,7 @@ func (h *Handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEvidence(w http.ResponseWriter, r *http.Request) {
 	fileName := r.PathValue("filename")
 
-	modTime, body, err := h.service.GetEvidence(fileName)
+	modTime, body, err := h.service.GetEvidence(r.Context(), fileName)
 	if err != nil {
 		h.handleGetEvidenceError(w, r, fileName, err)
 		return

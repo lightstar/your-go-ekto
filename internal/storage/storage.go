@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -53,7 +54,11 @@ func New(rootDir string) (*Storage, error) {
 }
 
 // GetEntity возвращает сущность по ID ее досье.
-func (s *Storage) GetEntity(dossierID uuid.UUID) (model.Entity, error) {
+func (s *Storage) GetEntity(ctx context.Context, dossierID uuid.UUID) (model.Entity, error) {
+	if err := ctx.Err(); err != nil {
+		return model.Entity{}, err
+	}
+
 	file, err := os.Open(s.entityFilePath(dossierID))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -73,7 +78,11 @@ func (s *Storage) GetEntity(dossierID uuid.UUID) (model.Entity, error) {
 }
 
 // SaveEntity сохраняет сущность в хранилище.
-func (s *Storage) SaveEntity(entity model.Entity) (err error) {
+func (s *Storage) SaveEntity(ctx context.Context, entity model.Entity) (err error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	entityJSON, err := json.Marshal(entity)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
@@ -84,7 +93,11 @@ func (s *Storage) SaveEntity(entity model.Entity) (err error) {
 }
 
 // RemoveEntity удаляет сущность из хранилища (только файл с JSON, улики нужно удалять отдельно).
-func (s *Storage) RemoveEntity(dossierID uuid.UUID) error {
+func (s *Storage) RemoveEntity(ctx context.Context, dossierID uuid.UUID) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if err := os.Remove(s.entityFilePath(dossierID)); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -100,7 +113,13 @@ func (s *Storage) RemoveEntity(dossierID uuid.UUID) error {
 // будет возвращена ошибка ErrLarge.
 // При ошибке чтения из источника будет возвращена ошибка ErrRead.
 // Сохранено при ошибках ничего не будет (временный файл удаляется).
-func (s *Storage) SaveEvidence(src io.Reader, name string, maxSize int64) (int64, error) {
+func (s *Storage) SaveEvidence(
+	ctx context.Context, src io.Reader, name string, maxSize int64,
+) (int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+
 	if !s.validEvidenceName(name) {
 		return 0, ErrInvalidEvidenceName
 	}
@@ -110,7 +129,11 @@ func (s *Storage) SaveEvidence(src io.Reader, name string, maxSize int64) (int64
 }
 
 // RemoveEvidence удаляет файл с уликой из хранилища.
-func (s *Storage) RemoveEvidence(name string) error {
+func (s *Storage) RemoveEvidence(ctx context.Context, name string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if !s.validEvidenceName(name) {
 		return ErrInvalidEvidenceName
 	}
@@ -126,7 +149,13 @@ func (s *Storage) RemoveEvidence(name string) error {
 
 // GetEvidence возвращает файл-изображение улики из хранилища в виде времени модификации и
 // потока данных. Это полезно для отдачи содержимого с помощью http.ServeContent.
-func (s *Storage) GetEvidence(name string) (time.Time, io.ReadSeekCloser, error) {
+func (s *Storage) GetEvidence(
+	ctx context.Context, name string,
+) (time.Time, io.ReadSeekCloser, error) {
+	if err := ctx.Err(); err != nil {
+		return time.Time{}, nil, err
+	}
+
 	if !s.validEvidenceName(name) {
 		return time.Time{}, nil, ErrInvalidEvidenceName
 	}

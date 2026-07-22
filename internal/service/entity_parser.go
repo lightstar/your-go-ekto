@@ -40,7 +40,7 @@ var (
 type entityParser struct {
 	// От Storage нам тут нужен только 1 метод, так что сужаем интерфейс для меньшей связности.
 	storage interface {
-		SaveEvidence(src io.Reader, name string, maxSize int64) (int64, error)
+		SaveEvidence(ctx context.Context, src io.Reader, name string, maxSize int64) (int64, error)
 	}
 	dossier dossier
 
@@ -102,7 +102,7 @@ func (p *entityParser) parseEntity(ctx context.Context, r EntityReader) error {
 				return invalidEntityError(ErrTooManyEvidences)
 			}
 
-			if err := p.parseEvidence(part.FileName(), part); err != nil {
+			if err := p.parseEvidence(ctx, part.FileName(), part); err != nil {
 				return fmt.Errorf("parse evidence: %w", err)
 			}
 		default:
@@ -181,8 +181,8 @@ func (p *entityParser) parseDossier(r io.Reader) error {
 // Возвращает ошибку при проблемах записи в хранилище или других неожиданных проблемах с IO/памятью.
 // При возникновении же ошибки в самих данных улик (формат/размер/...), они просто сохраняются в
 // failedEvidences, функция ошибки не возвращает.
-func (p *entityParser) parseEvidence(fileName string, r io.Reader) error {
-	name, size, err := p.saveEvidence(r)
+func (p *entityParser) parseEvidence(ctx context.Context, fileName string, r io.Reader) error {
+	name, size, err := p.saveEvidence(ctx, r)
 	if err != nil {
 		reason, ok := p.evidenceErrToReason(err)
 		if !ok {
@@ -208,7 +208,7 @@ func (p *entityParser) parseEvidence(fileName string, r io.Reader) error {
 // содержимому тела улики.
 // Возвращает ошибку при невалидном типе, превышении размера, невозможности создать UUID,
 // а также проблемах со чтением или записью.
-func (p *entityParser) saveEvidence(r io.Reader) (string, int64, error) {
+func (p *entityParser) saveEvidence(ctx context.Context, r io.Reader) (string, int64, error) {
 	ext, data, err := p.validateEvidenceBody(r)
 	if err != nil {
 		return "", 0, err
@@ -229,7 +229,7 @@ func (p *entityParser) saveEvidence(r io.Reader) (string, int64, error) {
 	// Проверку на превышение размера будет делать хранилище при записи, т.к. заранее размер
 	// неизвестен. При превышении хранилище вернет storage.ErrTooLarge, что будет обернуто
 	// в ErrEvidenceTooLarge.
-	size, err := p.storage.SaveEvidence(r, name, maxEvidenceSize)
+	size, err := p.storage.SaveEvidence(ctx, r, name, maxEvidenceSize)
 	if err != nil {
 		return "", 0, p.saveEvidenceError(err)
 	}

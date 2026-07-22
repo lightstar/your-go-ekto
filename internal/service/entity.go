@@ -48,8 +48,8 @@ type FailedEvidence struct {
 }
 
 // GetEntity возвращает сущность по ее ID.
-func (s *Service) GetEntity(id uuid.UUID) (model.Entity, error) {
-	entity, err := s.storage.GetEntity(id)
+func (s *Service) GetEntity(ctx context.Context, id uuid.UUID) (model.Entity, error) {
+	entity, err := s.storage.GetEntity(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrEntityNotExists) {
 			return model.Entity{}, ErrEntityNotExists
@@ -105,7 +105,7 @@ func (s *Service) CreateEntity(
 	var response CreateEntityResult
 
 	if len(p.savedEvidences) > 0 {
-		entity, err := s.saveEntity(p.dossier, p.savedEvidences)
+		entity, err := s.saveEntity(ctx, p.dossier, p.savedEvidences)
 		if err != nil {
 			return CreateEntityResult{}, fmt.Errorf("save entity: %w", err)
 		}
@@ -124,7 +124,9 @@ func (s *Service) CreateEntity(
 
 // saveEntity сохраняет сущность в хранилище (досье и список сохраненных улик).
 // В качестве id автоматически генерируется UUID v7.
-func (s *Service) saveEntity(dossier dossier, evidences []string) (e model.Entity, err error) {
+func (s *Service) saveEntity(
+	ctx context.Context, dossier dossier, evidences []string,
+) (e model.Entity, err error) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		return model.Entity{}, fmt.Errorf("generate uuid: %w", err)
@@ -139,7 +141,7 @@ func (s *Service) saveEntity(dossier dossier, evidences []string) (e model.Entit
 		Evidences:       evidences,
 	}
 
-	if err := s.storage.SaveEntity(entity); err != nil {
+	if err := s.storage.SaveEntity(ctx, entity); err != nil {
 		return model.Entity{}, s.saveToStorageError(err)
 	}
 
@@ -188,8 +190,10 @@ func (s *Service) paranormalIndex(savedEvidenceSize int64, totalEvidenceCount in
 
 // removeOrphanedEntity удаляет уже сохраненную сущность, если вдруг понадобится откат операции
 // сохранения.
+// Здесь мы игнорируем контекст запроса (используем context.Background()), т.к. откатить нужно
+// в любом случае.
 func (s *Service) removeOrphanedEntity(dossierID uuid.UUID) error {
-	if err := s.storage.RemoveEntity(dossierID); err != nil {
+	if err := s.storage.RemoveEntity(context.Background(), dossierID); err != nil {
 		errPrefix := "remove orphaned entity"
 
 		if errors.Is(err, storage.ErrStorageOp) {
@@ -203,11 +207,13 @@ func (s *Service) removeOrphanedEntity(dossierID uuid.UUID) error {
 
 // removeOrphanedEvidences удаляет уже сохраненные улики, если вдруг понадобится откат
 // операции сохранения сущности.
+// Здесь мы игнорируем контекст запроса (используем context.Background()), т.к. откатить нужно
+// в любом случае.
 func (s *Service) removeOrphanedEvidences(evidences []string) []error {
 	var errs []error
 
 	for _, evidence := range evidences {
-		if err := s.storage.RemoveEvidence(evidence); err != nil {
+		if err := s.storage.RemoveEvidence(context.Background(), evidence); err != nil {
 			errPrefix := "remove orphaned evidence"
 
 			if errors.Is(err, storage.ErrStorageOp) {

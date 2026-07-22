@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
@@ -14,12 +15,14 @@ import (
 // GetEvidence возвращает изображение улики по имени.
 // Возвращается время модификации и поток с телом файла, что может в дальнейшем
 // использоваться для вызова http.ServeContent.
-func (s *Service) GetEvidence(name string) (time.Time, io.ReadSeekCloser, error) {
+func (s *Service) GetEvidence(
+	ctx context.Context, name string,
+) (time.Time, io.ReadSeekCloser, error) {
 	if !s.validEvidenceName(name) {
 		return time.Time{}, nil, ErrInvalidEvidenceName
 	}
 
-	modTime, body, err := s.storage.GetEvidence(name)
+	modTime, body, err := s.storage.GetEvidence(ctx, name)
 	if err != nil {
 		if errors.Is(err, storage.ErrInvalidEvidenceName) {
 			return time.Time{}, nil, ErrInvalidEvidenceName

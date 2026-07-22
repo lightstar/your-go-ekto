@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -11,12 +12,12 @@ import (
 
 // Storage - интерфейс для хранилища сущностей и улик.
 type Storage interface {
-	GetEntity(dossierID uuid.UUID) (model.Entity, error)
-	SaveEntity(entity model.Entity) error
-	RemoveEntity(dossierID uuid.UUID) error
-	SaveEvidence(src io.Reader, name string, maxSize int64) (int64, error)
-	GetEvidence(name string) (time.Time, io.ReadSeekCloser, error)
-	RemoveEvidence(name string) error
+	GetEntity(ctx context.Context, dossierID uuid.UUID) (model.Entity, error)
+	SaveEntity(ctx context.Context, entity model.Entity) error
+	RemoveEntity(ctx context.Context, dossierID uuid.UUID) error
+	SaveEvidence(ctx context.Context, src io.Reader, name string, maxSize int64) (int64, error)
+	GetEvidence(ctx context.Context, name string) (time.Time, io.ReadSeekCloser, error)
+	RemoveEvidence(ctx context.Context, name string) error
 }
 
 // Service - сервис для работы с сущностями и уликами.
