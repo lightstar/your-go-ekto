@@ -5,7 +5,7 @@ services:
     build:
       context: ../
       dockerfile: deployments/Dockerfile
-    command: ["-storage=/storage", "-address=:8080", "-log=debug"]
+    command: ["-storage=/storage", "-addr=:8080", "-log=debug"]
     expose:
       - "8080"
     volumes:

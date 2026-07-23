@@ -32,7 +32,7 @@ func ParseConfig() (Config, error) {
 
 	flag.StringVar(&cfg.APIPrefix, "api", defAPIPrefix, "API prefix")
 	flag.StringVar(&cfg.StoragePath, "storage", defStoragePath, "Storage path")
-	flag.StringVar(&cfg.ServerAddress, "address", defServerAddress, "Server address")
+	flag.StringVar(&cfg.ServerAddress, "addr", defServerAddress, "Server address")
 
 	var logLevel string
 	flag.StringVar(&logLevel, "log", defLogLevel, "Log level (debug/info/warn/error)")

@@ -176,7 +176,7 @@ go build -o bin/ekto-server ./cmd/ekto-server
 
 | Аргумент   | Значение по умолчанию | Описание                                                 |
 | ---------- | --------------------: | -------------------------------------------------------- |
-| `-address` |               `:8080` | Адрес HTTP-сервера                                       |
+| `-addr`    |               `:8080` | Адрес HTTP-сервера                                       |
 | `-api`     |            `/api/v1/` | Префикс маршрутов API                                    |
 | `-storage` |             `storage` | Путь к файловому хранилищу                               |
 | `-log`     |               `debug` | Уровень логирования: `debug`, `info`, `warn` или `error` |
@@ -185,7 +185,7 @@ go build -o bin/ekto-server ./cmd/ekto-server
 
 ```shell
 go run ./cmd/ekto-server \
-  -address=:9000 \
+  -addr=:9000 \
   -api=/api/v1/ \
   -storage=./data \
   -log=info
