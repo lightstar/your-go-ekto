@@ -57,7 +57,7 @@ func (s *Service) GetEntity(ctx context.Context, id uuid.UUID) (model.Entity, er
 		if errors.Is(err, storage.ErrEntityNotExists) {
 			return model.Entity{}, ErrEntityNotExists
 		}
-		return model.Entity{}, s.getFromStorageError(err)
+		return model.Entity{}, s.translateGetFromStorageError(err)
 	}
 
 	return entity, nil
@@ -65,7 +65,9 @@ func (s *Service) GetEntity(ctx context.Context, id uuid.UUID) (model.Entity, er
 
 // CreateEntity создает новую сущность на основе данных из EntityReader.
 //
-// Для парсинга использует отдельную структуру entityMultipartProcessor.
+// Для последовательного чтения и обработки multipart-частей с использованием состояния
+// использует отдельную структуру entityMultipartProcessor.
+//
 // Выполняет автоматический откат при ошибке.
 func (s *Service) CreateEntity(
 	ctx context.Context, r EntityReader,
@@ -105,6 +107,8 @@ func (s *Service) CreateEntity(
 			}
 		}
 
+		// TODO: при панике прочие ошибки хранилища будут потеряны и не залогированы,
+		// пока этим пренебрегаем.
 		if panicErr != nil {
 			panic(panicErr)
 		}
@@ -154,15 +158,15 @@ func (s *Service) saveEntity(
 	}
 
 	if err := s.storage.SaveEntity(ctx, entity); err != nil {
-		return model.Entity{}, s.saveToStorageError(err)
+		return model.Entity{}, s.translateSaveToStorageError(err)
 	}
 
 	return entity, nil
 }
 
-// getFromStorageError оборачивает ошибку получения из хранилища, если это необходимо, чтобы клиенты
-// сервиса не зависели от ошибок storage.
-func (s *Service) getFromStorageError(err error) error {
+// translateGetFromStorageError оборачивает ошибку получения из хранилища, если это необходимо,
+// чтобы клиенты сервиса не зависели от ошибок storage.
+func (s *Service) translateGetFromStorageError(err error) error {
 	errPrefix := "get from storage"
 
 	if errors.Is(err, storage.ErrStorageOp) {
@@ -171,9 +175,9 @@ func (s *Service) getFromStorageError(err error) error {
 	return fmt.Errorf("%s: %w", errPrefix, err)
 }
 
-// saveToStorageError оборачивает ошибку сохранения в хранилище, если это необходимо, чтобы клиенты
-// сервиса не зависели от ошибок storage.
-func (s *Service) saveToStorageError(err error) error {
+// translateSaveToStorageError оборачивает ошибку сохранения в хранилище, если это необходимо,
+// чтобы клиенты сервиса не зависели от ошибок storage.
+func (s *Service) translateSaveToStorageError(err error) error {
 	errPrefix := "save to storage"
 
 	if errors.Is(err, storage.ErrStorageOp) {

@@ -34,7 +34,7 @@ func (s *Service) GetEvidence(
 			return time.Time{}, nil, ErrEvidenceNotExists
 		}
 
-		return time.Time{}, nil, s.getFromStorageError(err)
+		return time.Time{}, nil, s.translateGetFromStorageError(err)
 	}
 
 	return modTime, body, nil
