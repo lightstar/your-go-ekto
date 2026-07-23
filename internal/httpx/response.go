@@ -17,7 +17,7 @@ type ErrorResponse struct {
 // ErrMarshalResponse (при ошибке маршалинга в JSON), либо ErrWriteResponse (при ошибки записи
 // ответа).
 func WriteJSONResponse(w http.ResponseWriter, r *http.Request, response any, status int) error {
-	if errors.Is(r.Context().Err(), context.Canceled) {
+	if err := r.Context().Err(); err != nil && errors.Is(err, context.Canceled) {
 		return nil
 	}
 
