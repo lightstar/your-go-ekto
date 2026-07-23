@@ -87,7 +87,7 @@ func (h *Handler) getEntityResponse(entity model.Entity) GetEntityResponse {
 		Description:     entity.Description,
 		ThreatLevel:     entity.ThreatLevel,
 		Vulnerabilities: entity.Vulnerabilities,
-		EvidenceURLs:    h.evidenceURLs(entity.Evidences),
+		EvidenceURLs:    h.evidenceURLs(entity.Evidence),
 	}
 }
 

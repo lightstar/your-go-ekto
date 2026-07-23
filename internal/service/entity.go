@@ -124,7 +124,7 @@ func (s *Service) CreateEntity(
 
 		dossierID = entity.DossierID
 		response.DossierID = dossierID.String()
-		response.SavedEvidence = entity.Evidences
+		response.SavedEvidence = entity.Evidence
 		response.ParanormalIndex = s.paranormalIndex(p.savedEvidenceSize, p.totalEvidences)
 	}
 
@@ -150,7 +150,7 @@ func (s *Service) saveEntity(
 		Description:     dossier.Description,
 		ThreatLevel:     dossier.ThreatLevel,
 		Vulnerabilities: dossier.Vulnerabilities,
-		Evidences:       evidences,
+		Evidence:        evidences,
 	}
 
 	if err := s.storage.SaveEntity(ctx, entity); err != nil {

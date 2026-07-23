@@ -10,5 +10,5 @@ type Entity struct {
 	Description     string    `json:"description"`
 	ThreatLevel     int       `json:"threat_level"`
 	Vulnerabilities []string  `json:"vulnerabilities"`
-	Evidences       []string  `json:"evidence"`
+	Evidence        []string  `json:"evidence"`
 }
