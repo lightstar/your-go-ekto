@@ -37,6 +37,7 @@ type Handler struct {
 }
 
 // New создает новый экземпляр Handler.
+//
 // apiPrefix - префикс url-пути, используемый для доступа к обработчикам. Здесь он не валидируется,
 // проверяется только пустота, вызывающий код должен его валидировать предварительно сам.
 func New(
@@ -125,6 +126,7 @@ func (h *Handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEvidence обрабатывает запрос на получение файла с уликой по имени.
+//
 // Для отдачи тела улики клиенту используется http.ServeContent, который автоматически генерирует
 // корректные заголовки вроде Content-Type и Content-Length, а также обрабатывает Range-запросы.
 func (h *Handler) GetEvidence(w http.ResponseWriter, r *http.Request) {

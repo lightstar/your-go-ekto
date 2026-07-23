@@ -13,10 +13,12 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// WriteJSONResponse записывает http-ответ клиенту в формате JSON. Возвращает одну из ошибок -
-// ErrMarshalResponse (при ошибке маршалинга в JSON), либо ErrWriteResponse (при ошибки записи
-// ответа).
+// WriteJSONResponse записывает http-ответ клиенту в формате JSON.
+//
+// Возвращает одну из ошибок - ErrMarshalResponse (при ошибке маршалинга в JSON),
+// либо ErrWriteResponse (при ошибки записи ответа).
 func WriteJSONResponse(w http.ResponseWriter, r *http.Request, response any, status int) error {
+	// Если контекст отменен, то клиента уже нет, записывать некому.
 	if err := r.Context().Err(); err != nil && errors.Is(err, context.Canceled) {
 		return nil
 	}

@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const createEntityRollbackTimeout = 5 * time.Second
+
 // CreateStatus представляет собой статус создания сущности.
 // Может принимать только одно из предустановленных значений.
 type CreateStatus string
@@ -62,12 +64,13 @@ func (s *Service) GetEntity(ctx context.Context, id uuid.UUID) (model.Entity, er
 }
 
 // CreateEntity создает новую сущность на основе данных из EntityReader.
-// Для парсинга использует отдельную структуру entityParser.
+//
+// Для парсинга использует отдельную структуру entityMultipartProcessor.
 // Выполняет автоматический откат при ошибке.
 func (s *Service) CreateEntity(
 	ctx context.Context, r EntityReader,
 ) (resp CreateEntityResult, err error) {
-	p := entityParser{storage: s.storage}
+	p := entityMultipartProcessor{storage: s.storage}
 	var dossierID uuid.UUID
 
 	defer func() {
@@ -79,8 +82,10 @@ func (s *Service) CreateEntity(
 			return
 		}
 
-		const rollbackTimeout = 5 * time.Second
-		rollBackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rollbackTimeout)
+		// Отмена родительского контекста не должна мешать откату, но по времени мы его
+		// ограничиваем, чтобы вдруг не заблочился.
+		rollBackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx),
+			createEntityRollbackTimeout)
 		defer cancel()
 
 		orphanedEntityRemained := false
@@ -92,6 +97,7 @@ func (s *Service) CreateEntity(
 		}
 
 		// Мы не должны удалять улики, если сущность уже была сохранена, и ее не удалось удалить.
+		// Так состояние останется более консистентным.
 		if !orphanedEntityRemained {
 			removeErrs := s.removeOrphanedEvidences(rollBackCtx, p.savedEvidences)
 			if removeErrs != nil {
@@ -104,7 +110,7 @@ func (s *Service) CreateEntity(
 		}
 	}()
 
-	if err := p.parseEntity(ctx, r); err != nil {
+	if err := p.process(ctx, r); err != nil {
 		return CreateEntityResult{}, fmt.Errorf("parse entity: %w", err)
 	}
 
